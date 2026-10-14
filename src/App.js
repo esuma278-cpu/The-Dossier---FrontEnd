@@ -193,7 +193,9 @@ function App() {
         return;
       }
 
-      if (!data.token) {
+      const token = data.token ?? data.accessToken ?? data.jwt ?? data.authToken;
+
+      if (!token) {
         alert("Login succeeded, but the backend did not provide an authentication token.");
         return;
       }
@@ -201,7 +203,7 @@ function App() {
       setUser({
         username: data.username || username,
         role: data.role || "INVESTIGATOR",
-        token: data.token,
+        token,
       });
 
       setPage("dashboard");
@@ -325,7 +327,7 @@ function App() {
         headers: {
           "Content-Type": "application/json",
           Accept: "application/json",
-          Authorization: `Bearer ${user.token}`,
+          Authorization: "Bearer " + user.token,
         },
         body: JSON.stringify({
           theory: theoryText,

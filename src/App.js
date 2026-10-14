@@ -2,8 +2,7 @@ import React, { useState } from "react";
 import "./App.css";
 import API_BASE_URL from "./api";
 
-// Temporary sample cases.
-// We will replace these with cases fetched from MySQL.
+// Temporary sample cases
 const cases = [
   {
     id: 1,
@@ -110,46 +109,86 @@ const cases = [
   },
 ];
 
+const profiles = [
+  {
+    role: "INVESTIGATOR",
+    name: "Investigator",
+    description: "Follow leads, examine evidence, and build your theory.",
+    access: "Available to join",
+  },
+  {
+    role: "CASE_CREATOR",
+    name: "Case Creator",
+    description: "Shape compelling case files, suspects, and evidence.",
+    access: "Available to join",
+  },
+  {
+    role: "ADMINISTRATOR",
+    name: "Administrator",
+    description: "Oversee the archive and manage access.",
+    access: "Privately provisioned",
+  },
+];
+
 function App() {
   const [page, setPage] = useState("home");
   const [authMode, setAuthMode] = useState("login");
+  const [selectedRole, setSelectedRole] = useState("INVESTIGATOR");
   const [selectedCase, setSelectedCase] = useState(null);
   const [user, setUser] = useState(null);
   const [theory, setTheory] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // ---------------- LOGIN ----------------
-
+  // LOGIN
   const handleLogin = async (e) => {
     e.preventDefault();
 
     const form = e.currentTarget;
-    const username = form.username.value.trim();
-    const password = form.password.value;
+    const username = form.elements.username.value.trim();
+    const password = form.elements.password.value;
+
+    if (!username || !password) {
+      alert("Please enter your username and password.");
+      return;
+    }
 
     setLoading(true);
 
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/users/login`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            username,
-            password,
-          }),
-        }
-      );
+      const endpoint = `${API_BASE_URL}/api/users/login`;
 
-      const data = await response.json();
+      console.log("Login endpoint:", endpoint);
+      console.log("Login username:", username);
+
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          username,
+          password,
+        }),
+      });
+
+      const responseText = await response.text();
+
+      console.log("Login HTTP status:", response.status);
+      console.log("Login response:", responseText);
+
+      let data = {};
+
+      try {
+        data = responseText ? JSON.parse(responseText) : {};
+      } catch {
+        data = { message: responseText };
+      }
 
       if (!response.ok) {
         alert(
           data.message ||
-            "Login failed. Check your username and password."
+            `Login failed with HTTP ${response.status}. Check the browser console.`
         );
         return;
       }
@@ -161,26 +200,31 @@ function App() {
 
       setPage("dashboard");
     } catch (error) {
-      console.error("Login error:", error);
+      console.error("Login request failed:", error);
 
       alert(
-        "Could not connect to the backend. Make sure Spring Boot is running and the API URL is correct."
+        "Could not connect to the backend. Check that Spring Boot is running at " +
+          API_BASE_URL
       );
     } finally {
       setLoading(false);
     }
   };
 
-  // ---------------- REGISTRATION ----------------
-
+  // REGISTRATION
   const handleRegister = async (e) => {
     e.preventDefault();
 
     const form = e.currentTarget;
+    const username = form.elements.username.value.trim();
+    const email = form.elements.email.value.trim();
+    const password = form.elements.password.value;
+    const role = form.elements.role.value;
 
-    const username = form.username.value.trim();
-    const email = form.email.value.trim();
-    const password = form.password.value;
+    if (!username || !email || !password) {
+      alert("Please fill in all the required fields.");
+      return;
+    }
 
     setLoading(true);
 
@@ -191,54 +235,54 @@ function App() {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            Accept: "application/json",
           },
           body: JSON.stringify({
             username,
             email,
             password,
-            role: "INVESTIGATOR",
+            role,
           }),
         }
       );
 
-      if (!response.ok) {
-        const errorMessage = await response.text();
+      const responseText = await response.text();
 
-        throw new Error(
-          errorMessage ||
-            `Registration failed (${response.status})`
-        );
+      console.log("Registration HTTP status:", response.status);
+      console.log("Registration response:", responseText);
+
+      let data = {};
+
+      try {
+        data = responseText ? JSON.parse(responseText) : {};
+      } catch {
+        data = { message: responseText };
       }
 
-      alert(
-        "Registration successful! You can now login."
-      );
+      if (!response.ok) {
+        alert(
+          data.message ||
+            `Registration failed with HTTP ${response.status}.`
+        );
+        return;
+      }
+
+      alert("Registration successful! You can now log in.");
 
       form.reset();
       setAuthMode("login");
     } catch (error) {
-      console.error("Registration error:", error);
+      console.error("Registration request failed:", error);
 
-      if (
-        error.message.includes("Failed to fetch") ||
-        error instanceof TypeError
-      ) {
-        alert(
-          "Could not connect to the backend. Check that Spring Boot is running and CORS is configured."
-        );
-      } else {
-        alert(
-          error.message ||
-            "Registration failed. Please try again."
-        );
-      }
+      alert(
+        "Could not connect to the backend. Check that Spring Boot is running and CORS is configured."
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  // ---------------- LOGOUT ----------------
-
+  // LOGOUT
   const logout = () => {
     setUser(null);
     setPage("home");
@@ -246,16 +290,23 @@ function App() {
     setTheory("");
   };
 
-  // ---------------- OPEN CASE ----------------
-
+  // OPEN CASE
   const openCase = (caseItem) => {
     setSelectedCase(caseItem);
     setTheory("");
     setPage("case");
   };
 
-  // ---------------- HOME ----------------
+  const openRegistration = (role = "INVESTIGATOR") => {
+    setSelectedRole(role);
+    setAuthMode("register");
+    setPage("auth");
+  };
 
+  const activeProfile =
+    profiles.find((profile) => profile.role === user?.role) || profiles[0];
+
+  // HOME
   if (page === "home") {
     return (
       <div className="dossier-app">
@@ -271,7 +322,7 @@ function App() {
               setPage("auth");
             }}
           >
-            Investigator Login
+            Access Portal
           </button>
         </nav>
 
@@ -295,10 +346,7 @@ function App() {
 
             <button
               className="primary-button"
-              onClick={() => {
-                setAuthMode("register");
-                setPage("auth");
-              }}
+              onClick={() => openRegistration()}
             >
               Begin Investigation →
             </button>
@@ -308,56 +356,86 @@ function App() {
             <div className="stamp">CONFIDENTIAL</div>
 
             <p>CASE FILE</p>
-
             <h2>THE DOSSIER</h2>
 
-            <div className="file-line"></div>
+            <div className="file-line" />
 
-            <p className="file-small">
-              STATUS: ACTIVE
-            </p>
-
-            <p className="file-small">
-              ACCESS: RESTRICTED
-            </p>
-
+            <p className="file-small">STATUS: ACTIVE</p>
+            <p className="file-small">ACCESS: RESTRICTED</p>
             <p className="file-small">
               CLASSIFICATION: MYSTERY
             </p>
           </div>
         </main>
 
+        <section className="profiles">
+          <div className="profiles-heading">
+            <p className="eyebrow">YOUR PLACE IN THE ARCHIVE</p>
+            <h2>Choose your clearance.</h2>
+            <p>Every investigation starts with the right perspective.</p>
+          </div>
+
+          <div className="profile-grid">
+            {profiles.map((profile, index) => (
+              <article
+                className={`profile-card${
+                  profile.role === "ADMINISTRATOR" ? " profile-card-locked" : ""
+                }`}
+                key={profile.role}
+              >
+                <span className="profile-number">
+                  {String(index + 1).padStart(2, "0")}
+                </span>
+                <span className="profile-access">{profile.access}</span>
+                <h3>{profile.name}</h3>
+                <p>{profile.description}</p>
+                {profile.role === "ADMINISTRATOR" ? (
+                  <button
+                    className="profile-link"
+                    onClick={() => {
+                      setAuthMode("login");
+                      setPage("auth");
+                    }}
+                  >
+                    Administrator sign in →
+                  </button>
+                ) : (
+                  <button
+                    className="profile-link"
+                    onClick={() => openRegistration(profile.role)}
+                  >
+                    Create {profile.name.toLowerCase()} profile →
+                  </button>
+                )}
+              </article>
+            ))}
+          </div>
+        </section>
+
         <section className="features">
           <div>
             <span>01</span>
             <h3>EXAMINE</h3>
-            <p>
-              Study suspects, evidence and hidden clues.
-            </p>
+            <p>Study suspects, evidence and hidden clues.</p>
           </div>
 
           <div>
             <span>02</span>
             <h3>CONNECT</h3>
-            <p>
-              Follow timelines and piece together the story.
-            </p>
+            <p>Follow timelines and piece together the story.</p>
           </div>
 
           <div>
             <span>03</span>
             <h3>SOLVE</h3>
-            <p>
-              Submit your theory and uncover the truth.
-            </p>
+            <p>Submit your theory and uncover the truth.</p>
           </div>
         </section>
       </div>
     );
   }
 
-  // ---------------- AUTH ----------------
-
+  // LOGIN / REGISTRATION
   if (page === "auth") {
     return (
       <div className="dossier-app auth-page">
@@ -380,7 +458,7 @@ function App() {
           <p className="auth-subtitle">
             {authMode === "login"
               ? "Enter your investigator credentials."
-              : "Create your investigator profile."}
+              : "Choose a profile to begin your work in the archive."}
           </p>
 
           <form
@@ -390,9 +468,10 @@ function App() {
                 : handleRegister
             }
           >
-            <label>USERNAME</label>
+            <label htmlFor="username">USERNAME</label>
 
             <input
+              id="username"
               type="text"
               name="username"
               placeholder="Enter username"
@@ -402,21 +481,54 @@ function App() {
 
             {authMode === "register" && (
               <>
-                <label>EMAIL</label>
+                <label htmlFor="email">EMAIL</label>
 
                 <input
+                  id="email"
                   type="email"
                   name="email"
                   placeholder="Enter email"
                   autoComplete="email"
                   required
                 />
+
+                <fieldset className="profile-options">
+                  <legend>SELECT YOUR PROFILE</legend>
+                  {profiles
+                    .filter((profile) => profile.role !== "ADMINISTRATOR")
+                    .map((profile) => (
+                      <label
+                        className={`profile-option${
+                          selectedRole === profile.role
+                            ? " profile-option-selected"
+                            : ""
+                        }`}
+                        key={profile.role}
+                      >
+                        <input
+                          type="radio"
+                          name="role"
+                          value={profile.role}
+                          checked={selectedRole === profile.role}
+                          onChange={() => setSelectedRole(profile.role)}
+                        />
+                        <span className="profile-option-copy">
+                          <strong>{profile.name}</strong>
+                          <span>{profile.description}</span>
+                        </span>
+                      </label>
+                    ))}
+                  <p className="admin-note">
+                    Administrator access is provisioned privately.
+                  </p>
+                </fieldset>
               </>
             )}
 
-            <label>PASSWORD</label>
+            <label htmlFor="password">PASSWORD</label>
 
             <input
+              id="password"
               type="password"
               name="password"
               placeholder="Enter password"
@@ -471,8 +583,7 @@ function App() {
     );
   }
 
-  // ---------------- DASHBOARD ----------------
-
+  // DASHBOARD
   if (page === "dashboard") {
     return (
       <div className="dossier-app dashboard">
@@ -484,10 +595,7 @@ function App() {
           <div className="nav-user">
             <span>{user?.username}</span>
 
-            <button
-              className="nav-button"
-              onClick={logout}
-            >
+            <button className="nav-button" onClick={logout}>
               Logout
             </button>
           </div>
@@ -497,23 +605,23 @@ function App() {
           <div className="dashboard-heading">
             <div>
               <p className="eyebrow">
-                INVESTIGATOR DASHBOARD
+                {activeProfile.name.toUpperCase()} WORKSPACE
               </p>
 
               <h1>Choose your case.</h1>
+              <p className="dashboard-subtitle">
+                {activeProfile.description}
+              </p>
             </div>
 
             <div className="role-badge">
-              {user?.role || "INVESTIGATOR"}
+              {activeProfile.name}
             </div>
           </div>
 
           <div className="case-grid">
             {cases.map((caseItem) => (
-              <div
-                className="case-card"
-                key={caseItem.id}
-              >
+              <div className="case-card" key={caseItem.id}>
                 <div className="case-card-top">
                   <span>
                     CASE #
@@ -524,7 +632,6 @@ function App() {
                 </div>
 
                 <h2>{caseItem.title}</h2>
-
                 <p>{caseItem.description}</p>
 
                 <div className="case-meta">
@@ -546,8 +653,7 @@ function App() {
     );
   }
 
-  // ---------------- CASE DETAILS ----------------
-
+  // CASE DETAILS
   if (page === "case" && selectedCase) {
     return (
       <div className="dossier-app dashboard">
@@ -572,7 +678,6 @@ function App() {
             </p>
 
             <h1>{selectedCase.title}</h1>
-
             <p>{selectedCase.description}</p>
           </div>
 
@@ -580,36 +685,31 @@ function App() {
             <div className="section-block">
               <h2>01 — SUSPECTS</h2>
 
-              {selectedCase.suspects.map(
-                (suspect, index) => (
-                  <div className="suspect" key={index}>
-                    <div>
-                      <strong>{suspect.name}</strong>
-                      <p>{suspect.occupation}</p>
-                    </div>
-
-                    <span>{suspect.status}</span>
+              {selectedCase.suspects.map((suspect, index) => (
+                <div className="suspect" key={index}>
+                  <div>
+                    <strong>{suspect.name}</strong>
+                    <p>{suspect.occupation}</p>
                   </div>
-                )
-              )}
+
+                  <span>{suspect.status}</span>
+                </div>
+              ))}
             </div>
 
             <div className="section-block">
               <h2>02 — EVIDENCE</h2>
 
               <div className="evidence-list">
-                {selectedCase.evidence.map(
-                  (item, index) => (
-                    <div className="evidence" key={index}>
-                      <span>
-                        #
-                        {String(index + 1).padStart(2, "0")}
-                      </span>
+                {selectedCase.evidence.map((item, index) => (
+                  <div className="evidence" key={index}>
+                    <span>
+                      #{String(index + 1).padStart(2, "0")}
+                    </span>
 
-                      <p>{item}</p>
-                    </div>
-                  )
-                )}
+                    <p>{item}</p>
+                  </div>
+                ))}
               </div>
             </div>
 
@@ -617,32 +717,22 @@ function App() {
               <h2>03 — TIMELINE</h2>
 
               <div className="timeline">
-                {selectedCase.timeline.map(
-                  (event, index) => (
-                    <div
-                      className="timeline-item"
-                      key={index}
-                    >
-                      <span></span>
-                      <p>{event}</p>
-                    </div>
-                  )
-                )}
+                {selectedCase.timeline.map((event, index) => (
+                  <div className="timeline-item" key={index}>
+                    <span />
+                    <p>{event}</p>
+                  </div>
+                ))}
               </div>
             </div>
 
             <div className="theory-section">
-              <p className="eyebrow">
-                FINAL INVESTIGATION
-              </p>
-
+              <p className="eyebrow">FINAL INVESTIGATION</p>
               <h2>What's your theory?</h2>
 
               <textarea
                 value={theory}
-                onChange={(e) =>
-                  setTheory(e.target.value)
-                }
+                onChange={(e) => setTheory(e.target.value)}
                 placeholder="Connect the clues. Explain what you think happened..."
               />
 
@@ -650,9 +740,7 @@ function App() {
                 className="primary-button"
                 onClick={() => {
                   if (!theory.trim()) {
-                    alert(
-                      "Write your theory before submitting."
-                    );
+                    alert("Write your theory before submitting.");
                     return;
                   }
 

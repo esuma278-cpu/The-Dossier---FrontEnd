@@ -348,6 +348,112 @@ h3 {
 }
 
 /* =========================================
+   PROFILES
+========================================= */
+
+.profiles {
+  width: min(1120px, 84%);
+  margin: 0 auto;
+  padding: 35px 0 65px;
+  border-top: 1px solid var(--border);
+}
+
+.profiles-heading {
+  max-width: 580px;
+  margin-bottom: 28px;
+}
+
+.profiles-heading .eyebrow {
+  margin-bottom: 10px;
+}
+
+.profiles-heading h2 {
+  margin-bottom: 9px;
+}
+
+.profiles-heading > p:last-child {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.profile-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.profile-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 245px;
+  padding: 23px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+
+.profile-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(198, 166, 107, 0.55);
+}
+
+.profile-card-locked {
+  background:
+    linear-gradient(145deg, rgba(198, 166, 107, 0.04), transparent 70%),
+    var(--surface);
+}
+
+.profile-number {
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+}
+
+.profile-access {
+  align-self: flex-start;
+  margin-top: 17px;
+  padding: 4px 8px;
+  background: var(--surface-light);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-dim);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.profile-card h3 {
+  margin: 17px 0 7px;
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: 21px;
+}
+
+.profile-card > p {
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.profile-link {
+  align-self: flex-start;
+  margin-top: auto;
+  padding: 5px 0;
+  background: transparent;
+  border: 0;
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 700;
+  text-align: left;
+}
+
+.profile-link:hover {
+  color: var(--accent-hover);
+}
+
+/* =========================================
    HOMEPAGE FEATURE SECTION
 ========================================= */
 
@@ -413,7 +519,7 @@ h3 {
 
 .auth-card {
   width: 100%;
-  max-width: 450px;
+  max-width: 520px;
   padding: 38px;
   background: rgba(18, 20, 25, 0.95);
   border: 1px solid var(--border);
@@ -484,6 +590,80 @@ h3 {
 
 .auth-card input:focus {
   border-color: var(--accent);
+}
+
+.profile-options {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  margin: 0 0 18px;
+  padding: 0;
+  border: 0;
+}
+
+.profile-options legend {
+  margin-bottom: 10px;
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.8px;
+}
+
+.auth-card .profile-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin: 0;
+  padding: 12px;
+  background: #0c0d11;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-small);
+  cursor: pointer;
+  letter-spacing: normal;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.auth-card .profile-option-selected {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+
+.auth-card .profile-option input {
+  width: 16px;
+  min-height: 16px;
+  flex: 0 0 16px;
+  margin: 3px 0 0;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 50%;
+  accent-color: var(--accent);
+}
+
+.profile-option-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.profile-option-copy strong {
+  color: var(--text);
+  font-size: 12px;
+}
+
+.profile-option-copy > span {
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.admin-note {
+  margin: 3px 0 0;
+  color: var(--text-dim);
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: normal;
 }
 
 .auth-card form .primary-button {
@@ -851,6 +1031,10 @@ h3 {
     gap: 45px;
   }
 
+  .profile-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .case-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -904,6 +1088,15 @@ h3 {
     grid-template-columns: 1fr;
     gap: 8px;
     padding: 25px 0 55px;
+  }
+
+  .profiles {
+    width: 88%;
+    padding: 30px 0 45px;
+  }
+
+  .profile-grid {
+    grid-template-columns: 1fr;
   }
 
   .features > div {

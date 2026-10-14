@@ -138,6 +138,8 @@ function App() {
   const [user, setUser] = useState(null);
   const [theory, setTheory] = useState("");
   const [loading, setLoading] = useState(false);
+  const [submittingTheory, setSubmittingTheory] = useState(false);
+  const [theorySubmissionMessage, setTheorySubmissionMessage] = useState(null);
 
   // LOGIN
   const handleLogin = async (e) => {
@@ -175,8 +177,6 @@ function App() {
       const responseText = await response.text();
 
       console.log("Login HTTP status:", response.status);
-      console.log("Login response:", responseText);
-
       let data = {};
 
       try {
@@ -193,9 +193,15 @@ function App() {
         return;
       }
 
+      if (!data.token) {
+        alert("Login succeeded, but the backend did not provide an authentication token.");
+        return;
+      }
+
       setUser({
         username: data.username || username,
         role: data.role || "INVESTIGATOR",
+        token: data.token,
       });
 
       setPage("dashboard");
@@ -282,18 +288,113 @@ function App() {
     }
   };
 
+  const handleTheorySubmit = async (e) => {
+    e.preventDefault();
+
+    const theoryText = theory.trim();
+    if (!theoryText) {
+      setTheorySubmissionMessage({
+        type: "error",
+        text: "Write your theory before submitting.",
+      });
+      return;
+    }
+
+    if (!user?.token) {
+      setTheorySubmissionMessage({
+        type: "error",
+        text: "Your login session is unavailable. Log in again to submit a theory.",
+      });
+      return;
+    }
+
+    if (!selectedCase?.id) {
+      setTheorySubmissionMessage({
+        type: "error",
+        text: "Select a case before submitting your theory.",
+      });
+      return;
+    }
+
+    setSubmittingTheory(true);
+    setTheorySubmissionMessage(null);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/investigations`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          Authorization: `Bearer ${user.token}`,
+        },
+        body: JSON.stringify({
+          theory: theoryText,
+          caseId: selectedCase.id,
+        }),
+      });
+
+      const responseText = await response.text();
+      let data = {};
+      try {
+        data = responseText ? JSON.parse(responseText) : {};
+      } catch {
+        data = { message: responseText };
+      }
+
+      if (!response.ok) {
+        const message =
+          data.message ||
+          data.detail ||
+          (response.status === 401
+            ? "Your login token is invalid or expired. Log in again."
+            : response.status === 403
+              ? "Only investigator accounts can submit theories."
+              : response.status === 404
+                ? "The selected case was not found in the backend."
+            : `Theory submission failed (HTTP ${response.status}).`);
+        throw new Error(message);
+      }
+
+      if (data.id == null) {
+        throw new Error(
+          "The backend did not confirm that the theory was saved."
+        );
+      }
+
+      setTheory("");
+      setTheorySubmissionMessage({
+        type: "success",
+        text: "Your theory was submitted successfully.",
+      });
+    } catch (error) {
+      console.error("Theory submission failed:", error);
+      setTheorySubmissionMessage({
+        type: "error",
+        text:
+          error instanceof TypeError
+            ? `Could not connect to the backend at ${API_BASE_URL}. Check your connection and try again.`
+            : error.message ||
+              "Could not submit your theory. Please try again.",
+      });
+    } finally {
+      setSubmittingTheory(false);
+    }
+  };
+
   // LOGOUT
   const logout = () => {
     setUser(null);
     setPage("home");
     setSelectedCase(null);
     setTheory("");
+    setTheorySubmissionMessage(null);
   };
 
   // OPEN CASE
   const openCase = (caseItem) => {
     setSelectedCase(caseItem);
     setTheory("");
+    setTheorySubmissionMessage(null);
     setPage("case");
   };
 
@@ -730,27 +831,38 @@ function App() {
               <p className="eyebrow">FINAL INVESTIGATION</p>
               <h2>What's your theory?</h2>
 
-              <textarea
-                value={theory}
-                onChange={(e) => setTheory(e.target.value)}
-                placeholder="Connect the clues. Explain what you think happened..."
-              />
+              <form onSubmit={handleTheorySubmit}>
+                <textarea
+                  value={theory}
+                  onChange={(e) => {
+                    setTheory(e.target.value);
+                    setTheorySubmissionMessage(null);
+                  }}
+                  placeholder="Connect the clues. Explain what you think happened..."
+                  disabled={submittingTheory}
+                />
 
-              <button
-                className="primary-button"
-                onClick={() => {
-                  if (!theory.trim()) {
-                    alert("Write your theory before submitting.");
-                    return;
-                  }
+                {theorySubmissionMessage && (
+                  <p
+                    role={
+                      theorySubmissionMessage.type === "error"
+                        ? "alert"
+                        : "status"
+                    }
+                    aria-live="polite"
+                  >
+                    {theorySubmissionMessage.text}
+                  </p>
+                )}
 
-                  alert(
-                    "Theory submission is not connected to the backend yet."
-                  );
-                }}
-              >
-                SUBMIT THEORY →
-              </button>
+                <button
+                  className="primary-button"
+                  type="submit"
+                  disabled={submittingTheory}
+                >
+                  {submittingTheory ? "SUBMITTING..." : "SUBMIT THEORY →"}
+                </button>
+              </form>
             </div>
           </section>
         </main>
